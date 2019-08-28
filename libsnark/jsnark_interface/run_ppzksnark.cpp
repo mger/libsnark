@@ -12,6 +12,9 @@
 #include <libsnark/zk_proof_systems/ppzksnark/r1cs_gg_ppzksnark/examples/run_r1cs_gg_ppzksnark.hpp>
 #include <libsnark/zk_proof_systems/ppzksnark/r1cs_gg_ppzksnark/r1cs_gg_ppzksnark.hpp>
 #include <libsnark/common/default_types/r1cs_gg_ppzksnark_pp.hpp>
+#include <libsnark/zk_proof_systems/ppzksnark/r1cs_se_ppzksnark/examples/run_r1cs_se_ppzksnark.hpp>
+#include <libsnark/zk_proof_systems/ppzksnark/r1cs_se_ppzksnark/r1cs_se_ppzksnark.hpp>
+#include <libsnark/common/default_types/r1cs_se_ppzksnark_pp.hpp>
 
 int main(int argc, char **argv) {
 
@@ -20,13 +23,23 @@ int main(int argc, char **argv) {
 	gadgetlib2::GadgetLibAdapter::resetVariableIndex();
 	ProtoboardPtr pb = gadgetlib2::Protoboard::create(gadgetlib2::R1P);
 
+	enum ProvingScheme{
+		DEFAULT,
+		G16,
+		GM17
+	} scheme = DEFAULT;
+
 	int inputStartIndex = 0;
 	if(argc == 4){
-		if(strcmp(argv[1], "gg") != 0){
-			cout << "Invalid Argument - Terminating.." << endl;
+		if(strcmp(argv[1], "g16") == 0){
+			cout << "Using [Gro16] proving scheme." << endl;
+			scheme = G16;
+		} else if (strcmp(argv[1], "gm17") == 0) {
+			cout << "Using [GM17] proving scheme." << endl;
+			scheme = GM17;
+		} else {
+			cout << "Invalid proving scheme specified - Terminating..." << endl;
 			return -1;
-		} else{
-			cout << "Using ppzsknark in the generic group model [Gro16]." << endl;
 		}
 		inputStartIndex = 1;	
 	} 	
@@ -77,14 +90,16 @@ int main(int argc, char **argv) {
 	
 	const bool test_serialization = false;
 	bool successBit = false;
-	if(argc == 3) {
+	if(scheme == DEFAULT) {
 		successBit = libsnark::run_r1cs_ppzksnark<libff::default_ec_pp>(example, test_serialization);
-
-	} else {
+	} else if (scheme == G16) {
 		// The following code makes use of the observation that 
 		// libsnark::default_r1cs_gg_ppzksnark_pp is the same as libff::default_ec_pp (see r1cs_gg_ppzksnark_pp.hpp)
 		// otherwise, the following code won't work properly, as GadgetLib2 is hardcoded to use libff::default_ec_pp.
 		successBit = libsnark::run_r1cs_gg_ppzksnark<libsnark::default_r1cs_gg_ppzksnark_pp>(
+			example, test_serialization);
+	} else if (scheme == GM17) {
+		successBit = libsnark::run_r1cs_se_ppzksnark<libsnark::default_r1cs_se_ppzksnark_pp>(
 			example, test_serialization);
 	}
 
